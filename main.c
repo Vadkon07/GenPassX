@@ -3,6 +3,15 @@
 #include <time.h>
 #include <ctype.h>
 
+
+static void copy_to_clipboard(GtkWidget *button, gpointer user_data) {
+    GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+    GtkEntry *entry = GTK_ENTRY(user_data);
+    const gchar *text = gtk_entry_get_text(entry);
+    gtk_clipboard_set_text(clipboard, text, -1);
+    g_print("Text copied to clipboard: %s\n", text);
+}
+
 // Function to generate a random password with custom character sets
 void generate_password(char *password, int length, int use_lower, int use_upper, int use_digits, int use_special) {
     const char lower[] = "abcdefghijklmnopqrstuvwxyz";
@@ -190,6 +199,11 @@ int main(int argc, char *argv[]) {
     save_button = gtk_button_new_with_label("Save Password to File");
     g_signal_connect(save_button, "clicked", G_CALLBACK(on_save_clicked), entry);
     gtk_box_pack_start(GTK_BOX(box), save_button, FALSE, FALSE, 5);
+
+    // Create a button to copy generated password to clickboard
+    button = gtk_button_new_with_label("Copy to clickboard");
+    g_signal_connect(button, "clicked", G_CALLBACK(copy_to_clipboard), entry);
+    gtk_box_pack_start(GTK_BOX(box), button, FALSE, FALSE, 5);
 
     // Show all widgets
     gtk_widget_show_all(window);
