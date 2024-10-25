@@ -3,6 +3,20 @@
 #include <time.h>
 #include <ctype.h>
 
+// Callback to clear the entry
+static gboolean clear_entry(gpointer user_data) {
+    GtkWidget **widgets_clear = (GtkWidget **)user_data;
+    GtkToggleButton *toggle_button = GTK_TOGGLE_BUTTON(widgets_clear[0]);
+    GtkEntry *entry = GTK_ENTRY(widgets_clear[1]);
+    
+    // Check if the toggle button is active
+    if (gtk_toggle_button_get_active(toggle_button)) {
+        gtk_entry_set_text(entry, "");
+    }
+
+    // Return TRUE to keep the timer running
+    return TRUE;
+}
 
 static void copy_to_clipboard(GtkWidget *button, gpointer user_data) {
     GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
@@ -141,6 +155,7 @@ int main(int argc, char *argv[]) {
     GtkWidget *lower_check, *upper_check, *digit_check, *special_check;
     GtkWidget *visibility_check;
     GtkWidget *box;
+    GtkWidget *toggle_button;
 
     // Create a new window
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -185,13 +200,18 @@ int main(int argc, char *argv[]) {
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(special_check), TRUE);
     gtk_box_pack_start(GTK_BOX(box), special_check, FALSE, FALSE, 5);
 
+    toggle_button = gtk_check_button_new_with_label("Auto-clear every 10 seconds");
+    gtk_box_pack_start(GTK_BOX(box), toggle_button, FALSE, FALSE, 5);
+    GtkWidget *widgets_clear[] = {GTK_WIDGET(toggle_button), GTK_WIDGET(entry)};
+
+
     // Create a label to display password strength
     strength_label = gtk_label_new("Strength: ");
     gtk_box_pack_start(GTK_BOX(box), strength_label, FALSE, FALSE, 5);
 
     // Create a button widget for generating the password
     button = gtk_button_new_with_label("Generate Password");
-    GtkWidget *widgets[] = {entry, length_entry, strength_label, lower_check, upper_check, digit_check, special_check};
+    GtkWidget *widgets[] = {entry, length_entry, strength_label, lower_check, upper_check, digit_check, special_check, toggle_button};
     g_signal_connect(button, "clicked", G_CALLBACK(on_generate_clicked), widgets);
     gtk_box_pack_start(GTK_BOX(box), button, FALSE, FALSE, 5);
 
@@ -204,6 +224,9 @@ int main(int argc, char *argv[]) {
     button = gtk_button_new_with_label("Copy to clickboard");
     g_signal_connect(button, "clicked", G_CALLBACK(copy_to_clipboard), entry);
     gtk_box_pack_start(GTK_BOX(box), button, FALSE, FALSE, 5);
+
+    // Set up a timer to clear the entry every 10 seconds (10000 milliseconds)
+    g_timeout_add(10000, clear_entry, widgets_clear);
 
     // Show all widgets
     gtk_widget_show_all(window);

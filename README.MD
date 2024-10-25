@@ -42,7 +42,7 @@ Below is a list of potential features that can be added in future versions of th
 - [X] **Allow Custom Character Sets:** Lets users choose which character sets to include.
 - [X] **Copy to Clipboard:** Adds a button to copy the password to the clipboard.
 - [X] **Save Password to a File:** Allows saving the generated password to a text file.
-- [ ] **Password Expiry Timer:** Clears the password after a set amount of time.
+- [X] **Password Expiry Timer:** Clears the password after a set amount of time.
 - [ ] **Generate Multiple Passwords:**
 Allows generating multiple passwords at once.
 - [X] **Password Visibility Toggle:** Adds a toggle button to show or hide the password.
