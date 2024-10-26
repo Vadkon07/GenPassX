@@ -3,6 +3,9 @@
 #include <time.h>
 #include <ctype.h>
 
+
+// version = 0.1
+
 // Callback to clear the entry
 static gboolean clear_entry(gpointer user_data) {
     GtkWidget **widgets_clear = (GtkWidget **)user_data;
@@ -60,15 +63,17 @@ const char* evaluate_password_strength(const char *password) {
     
     int score = has_upper + has_lower + has_digit + has_special;
     
-    if (strlen(password) >= 12 && score >= 3) return "Strong";
+    if (strlen(password) >= 48 && score >= 3) return ":/";
+    else if (strlen(password) >= 24 && score >= 3) return "Very strong";
+    else if (strlen(password) >= 12 && score >= 3) return "Strong";
     else if (strlen(password) >= 8 && score >= 2) return "Medium";
-    else return "Weak";
+    else return "Weak. Try to generate another password!";
 }
 
 // Callback for toggling password visibility
 void on_toggle_visibility(GtkWidget *widget, gpointer entry) {
     gboolean is_visible = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-    gtk_entry_set_visibility(GTK_ENTRY(entry), is_visible);
+    gtk_entry_set_visibility(GTK_ENTRY(entry), is_visible); //is_visible
 }
 
 // Callback for saving the password to a file
@@ -102,6 +107,19 @@ void on_save_clicked(GtkWidget *widget, gpointer data) {
     }
 
     gtk_widget_destroy(dialog);
+}
+
+static void on_theme_switch(GtkWidget *button, gpointer user_data) {
+    GtkSettings *settings = gtk_settings_get_default();
+    static gboolean dark_mode = FALSE;
+
+    if (dark_mode) {
+        g_object_set(settings, "gtk-application-prefer-dark-theme", FALSE, NULL);
+        dark_mode = FALSE;
+    } else {
+        g_object_set(settings, "gtk-application-prefer-dark-theme", TRUE, NULL);
+        dark_mode = TRUE;
+    }
 }
 
 // Callback function for the "Generate Password" button
@@ -159,7 +177,7 @@ int main(int argc, char *argv[]) {
 
     // Create a new window
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "Password Generator");
+    gtk_window_set_title(GTK_WINDOW(window), "GenPassX");
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
     gtk_widget_set_size_request(window, 300, 300);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER); // Center the window
@@ -167,6 +185,20 @@ int main(int argc, char *argv[]) {
     // Create a vertical box
     box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_add(GTK_CONTAINER(window), box);
+
+    // Theme button
+    button = gtk_button_new_with_label("Switch Theme");
+    gtk_widget_set_size_request(button, 15, 15); // Set the size of the button
+
+    // Style the button to remove borders, padding, and add background color
+    GtkCssProvider *provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(provider,
+       "button { padding: 0px; margin: 0px; border: 0px; background-color: transparent; }", -1, NULL);
+    GtkStyleContext *context = gtk_widget_get_style_context(button);
+    gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+    g_signal_connect(button, "clicked", G_CALLBACK(on_theme_switch), NULL);
+    gtk_box_pack_start(GTK_BOX(box), button, FALSE, FALSE, 5);
 
     // Create an entry widget for the generated password
     entry = gtk_entry_new();
@@ -178,10 +210,11 @@ int main(int argc, char *argv[]) {
     gtk_entry_set_placeholder_text(GTK_ENTRY(length_entry), "Enter length (default 12, max 128)");
     gtk_box_pack_start(GTK_BOX(box), length_entry, FALSE, FALSE, 5);
 
-    // Create a visibility toggle button (place it above checkboxes)
+    // Create a visibility toggle button
     visibility_check = gtk_check_button_new_with_label("Show Password");
     g_signal_connect(visibility_check, "toggled", G_CALLBACK(on_toggle_visibility), entry);
-    gtk_box_pack_start(GTK_BOX(box), visibility_check, FALSE, FALSE, 5);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(visibility_check), TRUE);
+    gtk_box_pack_start(GTK_BOX(box), visibility_check, FALSE, FALSE, 25);
 
     // Create checkboxes for character sets
     lower_check = gtk_check_button_new_with_label("Include Lowercase");
@@ -203,7 +236,6 @@ int main(int argc, char *argv[]) {
     toggle_button = gtk_check_button_new_with_label("Auto-clear every 10 seconds");
     gtk_box_pack_start(GTK_BOX(box), toggle_button, FALSE, FALSE, 5);
     GtkWidget *widgets_clear[] = {GTK_WIDGET(toggle_button), GTK_WIDGET(entry)};
-
 
     // Create a label to display password strength
     strength_label = gtk_label_new("Strength: ");

@@ -1,6 +1,14 @@
-# GUI Password Generator
+<p align="center">
+  <img src="Logo.png" alt="App Logo"/>
+</p>
 
-This simple app demonstrates how to create a GTK3-based GUI application that generates secure passwords. It offers multiple customization options and includes features to enhance both usability and security.
+<p align="center">
+  <img src="https://img.shields.io/badge/LICENSE-MIT-green"/>
+</p>
+
+# ***GenPassX***
+
+Improved version of our famous **password generation** app! In ***GenPassX*** we added GUI, and also it offers multiple customization options and features.
 
 ## Installation
 
@@ -14,7 +22,7 @@ sudo apt-get install libgtk-3-dev
 After installing the required libraries, compile the app using:
 
 ```bash
-gcc -o password_generator main.c `pkg-config --cflags --libs gtk+-3.0`
+gcc -o genpassx main.c `pkg-config --cflags --libs gtk+-3.0`
 ```
 
 Running the Application
@@ -23,12 +31,20 @@ Once compiled, run the application with:
 
 ```
 
-## Features
+## Features + Guide
 - Generate random passwords of customizable length.
 - **Password Strength Indicator:** Displays the strength of the generated password (Weak, Medium, Strong) based on its length and character diversity.
 - **Customizable Character Sets:** Choose which character types (lowercase, uppercase, digits, special characters) to include in the password.
 - **Password Visibility Toggle:** Easily show or hide the generated password.
 - **Save Password:** Save the generated password to a text file.
+
+<p align="center">
+  <img src="Guide.png" alt="Guide Logo"/>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/LICENSE-MIT-green"/>
+</p>
 
 ## Usage Tips
 - **Avoid Confusing Characters:** In your password, consider replacing ambiguous characters like '0' (zero) with 'O' (letter) to avoid confusion (e.g., LEM0N vs. LEMON).
@@ -49,7 +65,7 @@ Allows generating multiple passwords at once.
 - [ ] **Password History:** Keeps track of previously generated passwords.
 - [ ] **Length Slider:** Adds a slider to select the password length.
 - [ ] **Advanced Security Options:** Offers options like avoiding ambiguous characters.
-- [ ] **Dark Mode / Theme Switching:** Adds a dark mode option for the interface.
+- [X] **Dark Mode / Theme Switching:** Adds a dark mode option for the interface.
 - [ ] **Password Policy Checker:** Allows defining custom password policies.
 - [ ] **Responsive UI for Different Devices:** Ensures the UI is responsive on different screen sizes.
 - [ ] **Password Strengthening Algorithms (e.g., Bcrypt, PBKDF2):** Adds strong hashing algorithms for password storage.
