@@ -28,7 +28,7 @@ gcc -o genpassx main.c `pkg-config --cflags --libs gtk+-3.0`
 Running the Application
 Once compiled, run the application with:
 ```bash
-
+./genpassx
 ```
 
 ## Features + Guide
