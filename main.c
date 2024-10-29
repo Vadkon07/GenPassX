@@ -3,7 +3,7 @@
 #include <time.h>
 #include <ctype.h>
 
-// version = 0.1
+// version = 0.2
 
 // Callback to clear the entry
 static gboolean clear_entry(gpointer user_data) {
