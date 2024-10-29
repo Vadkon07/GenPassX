@@ -6,7 +6,7 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 
-// version = 0.1
+// version = 0.2
 
 // Function to hash the password using SHA256
 void hash_password_sha256(const char *password, unsigned char *output_hash) {
