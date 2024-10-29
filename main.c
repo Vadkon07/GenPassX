@@ -3,7 +3,6 @@
 #include <time.h>
 #include <ctype.h>
 
-
 // version = 0.1
 
 // Callback to clear the entry
@@ -30,16 +29,22 @@ static void copy_to_clipboard(GtkWidget *button, gpointer user_data) {
 }
 
 // Function to generate a random password with custom character sets
-void generate_password(char *password, int length, int use_lower, int use_upper, int use_digits, int use_special) {
-    const char lower[] = "abcdefghijklmnopqrstuvwxyz";
-    const char upper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const char digits[] = "0123456789";
+void generate_password(char *password, int length, int use_lower, int use_upper, int use_digits, int use_special, int avoid_ambiguous) {
+    const char lower[] = "abcdefghijkmnopqrstuvwxyz"; // Excluding 'l'
+    const char upper[] = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // Excluding 'I' and 'O'
+    const char digits[] = "23456789"; // Excluding '0' and '1'
     const char special[] = "!@#$%^&*";
     char charset[128] = "";
-    
-    if (use_lower) strcat(charset, lower);
-    if (use_upper) strcat(charset, upper);
-    if (use_digits) strcat(charset, digits);
+
+    if (avoid_ambiguous) {
+        if (use_lower) strcat(charset, lower);
+        if (use_upper) strcat(charset, upper);
+        if (use_digits) strcat(charset, digits);
+    } else {
+        if (use_lower) strcat(charset, "abcdefghijklmnopqrstuvwxyz");
+        if (use_upper) strcat(charset, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        if (use_digits) strcat(charset, "0123456789");
+    }
     if (use_special) strcat(charset, special);
     
     int charset_length = strlen(charset);
@@ -73,7 +78,7 @@ const char* evaluate_password_strength(const char *password) {
 // Callback for toggling password visibility
 void on_toggle_visibility(GtkWidget *widget, gpointer entry) {
     gboolean is_visible = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-    gtk_entry_set_visibility(GTK_ENTRY(entry), is_visible); //is_visible
+    gtk_entry_set_visibility(GTK_ENTRY(entry), is_visible);
 }
 
 // Callback for saving the password to a file
@@ -126,22 +131,23 @@ static void on_theme_switch(GtkWidget *button, gpointer user_data) {
 void on_generate_clicked(GtkWidget *widget, gpointer data) {
     GtkWidget **widgets = (GtkWidget **)data;
     GtkWidget *entry = widgets[0];
-    GtkWidget *length_entry = widgets[1];
+    GtkWidget *length_scale = widgets[1];
     GtkWidget *strength_label = widgets[2];
     GtkToggleButton *lower_check = GTK_TOGGLE_BUTTON(widgets[3]);
     GtkToggleButton *upper_check = GTK_TOGGLE_BUTTON(widgets[4]);
     GtkToggleButton *digit_check = GTK_TOGGLE_BUTTON(widgets[5]);
     GtkToggleButton *special_check = GTK_TOGGLE_BUTTON(widgets[6]);
+    GtkToggleButton *ambiguous_check = GTK_TOGGLE_BUTTON(widgets[7]);
 
-    const char *length_str = gtk_entry_get_text(GTK_ENTRY(length_entry));
-    int length = atoi(length_str);
-    if (length <= 0 || length > 128) length = 12;
+    // Get the length value from the slider
+    int length = (int)gtk_range_get_value(GTK_RANGE(length_scale));
 
     // Get the status of the checkboxes for character sets
     int use_lower = gtk_toggle_button_get_active(lower_check);
     int use_upper = gtk_toggle_button_get_active(upper_check);
     int use_digits = gtk_toggle_button_get_active(digit_check);
     int use_special = gtk_toggle_button_get_active(special_check);
+    int avoid_ambiguous = gtk_toggle_button_get_active(ambiguous_check);
 
     // If no character set is selected, default to using all sets
     if (!use_lower && !use_upper && !use_digits && !use_special) {
@@ -149,7 +155,7 @@ void on_generate_clicked(GtkWidget *widget, gpointer data) {
     }
 
     char *password = (char *)malloc((length + 1) * sizeof(char));
-    generate_password(password, length, use_lower, use_upper, use_digits, use_special);
+    generate_password(password, length, use_lower, use_upper, use_digits, use_special, avoid_ambiguous);
     gtk_entry_set_text(GTK_ENTRY(entry), password);
 
     // Update the password strength label with prefix "Strength: "
@@ -168,9 +174,9 @@ int main(int argc, char *argv[]) {
     GtkWidget *window;
     GtkWidget *button, *save_button;
     GtkWidget *entry;
-    GtkWidget *length_entry;
+    GtkWidget *length_scale;
     GtkWidget *strength_label;
-    GtkWidget *lower_check, *upper_check, *digit_check, *special_check;
+    GtkWidget *lower_check, *upper_check, *digit_check, *special_check, *ambiguous_check;
     GtkWidget *visibility_check;
     GtkWidget *box;
     GtkWidget *toggle_button;
@@ -205,16 +211,18 @@ int main(int argc, char *argv[]) {
     gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "Generated password will appear here");
     gtk_box_pack_start(GTK_BOX(box), entry, FALSE, FALSE, 5);
 
-    // Create an entry widget for the length input
-    length_entry = gtk_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(length_entry), "Enter length (default 12, max 128)");
-    gtk_box_pack_start(GTK_BOX(box), length_entry, FALSE, FALSE, 5);
+    // Create a scale (slider) for the password length
+    length_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 1, 128, 1);
+    gtk_range_set_value(GTK_RANGE(length_scale), 12); // Set default value to 12
+    gtk_scale_set_digits(GTK_SCALE(length_scale), 0); // Set to integer values
+    gtk_scale_set_value_pos(GTK_SCALE(length_scale), GTK_POS_RIGHT);
+    gtk_box_pack_start(GTK_BOX(box), length_scale, FALSE, FALSE, 5);
 
     // Create a visibility toggle button
     visibility_check = gtk_check_button_new_with_label("Show Password");
     g_signal_connect(visibility_check, "toggled", G_CALLBACK(on_toggle_visibility), entry);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(visibility_check), TRUE);
-    gtk_box_pack_start(GTK_BOX(box), visibility_check, FALSE, FALSE, 25);
+    gtk_box_pack_start(GTK_BOX(box), visibility_check, FALSE, FALSE, 5);
 
     // Create checkboxes for character sets
     lower_check = gtk_check_button_new_with_label("Include Lowercase");
@@ -233,6 +241,9 @@ int main(int argc, char *argv[]) {
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(special_check), TRUE);
     gtk_box_pack_start(GTK_BOX(box), special_check, FALSE, FALSE, 5);
 
+    ambiguous_check = gtk_check_button_new_with_label("Avoid Ambiguous Characters");
+    gtk_box_pack_start(GTK_BOX(box), ambiguous_check, FALSE, FALSE, 5);
+
     toggle_button = gtk_check_button_new_with_label("Auto-clear every 10 seconds");
     gtk_box_pack_start(GTK_BOX(box), toggle_button, FALSE, FALSE, 5);
     GtkWidget *widgets_clear[] = {GTK_WIDGET(toggle_button), GTK_WIDGET(entry)};
@@ -243,7 +254,7 @@ int main(int argc, char *argv[]) {
 
     // Create a button widget for generating the password
     button = gtk_button_new_with_label("Generate Password");
-    GtkWidget *widgets[] = {entry, length_entry, strength_label, lower_check, upper_check, digit_check, special_check, toggle_button};
+    GtkWidget *widgets[] = {entry, length_scale, strength_label, lower_check, upper_check, digit_check, special_check, ambiguous_check, toggle_button};
     g_signal_connect(button, "clicked", G_CALLBACK(on_generate_clicked), widgets);
     gtk_box_pack_start(GTK_BOX(box), button, FALSE, FALSE, 5);
 
@@ -252,8 +263,8 @@ int main(int argc, char *argv[]) {
     g_signal_connect(save_button, "clicked", G_CALLBACK(on_save_clicked), entry);
     gtk_box_pack_start(GTK_BOX(box), save_button, FALSE, FALSE, 5);
 
-    // Create a button to copy generated password to clickboard
-    button = gtk_button_new_with_label("Copy to clickboard");
+    // Create a button to copy generated password to clipboard
+    button = gtk_button_new_with_label("Copy to clipboard");
     g_signal_connect(button, "clicked", G_CALLBACK(copy_to_clipboard), entry);
     gtk_box_pack_start(GTK_BOX(box), button, FALSE, FALSE, 5);
 
