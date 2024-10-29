@@ -63,8 +63,8 @@ Below is a list of potential features that can be added in future versions of th
 Allows generating multiple passwords at once.
 - [X] **Password Visibility Toggle:** Adds a toggle button to show or hide the password.
 - [ ] **Password History:** Keeps track of previously generated passwords.
-- [ ] **Length Slider:** Adds a slider to select the password length.
-- [ ] **Advanced Security Options:** Offers options like avoiding ambiguous characters.
+- [X] **Length Slider:** Adds a slider to select the password length.
+- [X] **Advanced Security Options:** Offers options like avoiding ambiguous characters.
 - [X] **Dark Mode / Theme Switching:** Adds a dark mode option for the interface.
 - [ ] **Password Policy Checker:** Allows defining custom password policies.
 - [ ] **Responsive UI for Different Devices:** Ensures the UI is responsive on different screen sizes.
