@@ -2,8 +2,83 @@
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
+#include <openssl/evp.h>
+#include <openssl/sha.h>
+#include <openssl/rand.h>
 
 // version = 0.1
+
+// Function to hash the password using SHA256
+void hash_password_sha256(const char *password, unsigned char *output_hash) {
+    EVP_MD_CTX *mdctx;
+    if((mdctx = EVP_MD_CTX_new()) == NULL) {
+        g_print("Error creating context for SHA256\n");
+        return;
+    }
+
+    if(1 != EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL)) {
+        g_print("Error initializing SHA256\n");
+        EVP_MD_CTX_free(mdctx);
+        return;
+    }
+
+    if(1 != EVP_DigestUpdate(mdctx, password, strlen(password))) {
+        g_print("Error updating SHA256\n");
+        EVP_MD_CTX_free(mdctx);
+        return;
+    }
+
+    if(1 != EVP_DigestFinal_ex(mdctx, output_hash, NULL)) {
+        g_print("Error finalizing SHA256\n");
+        EVP_MD_CTX_free(mdctx);
+        return;
+    }
+
+    EVP_MD_CTX_free(mdctx);
+}
+
+// Function to hash the password using SHA512
+void hash_password_sha512(const char *password, unsigned char *output_hash) {
+    EVP_MD_CTX *mdctx;
+    if((mdctx = EVP_MD_CTX_new()) == NULL) {
+        g_print("Error creating context for SHA512\n");
+        return;
+    }
+
+    if(1 != EVP_DigestInit_ex(mdctx, EVP_sha512(), NULL)) {
+        g_print("Error initializing SHA512\n");
+        EVP_MD_CTX_free(mdctx);
+        return;
+    }
+
+    if(1 != EVP_DigestUpdate(mdctx, password, strlen(password))) {
+        g_print("Error updating SHA512\n");
+        EVP_MD_CTX_free(mdctx);
+        return;
+    }
+
+    if(1 != EVP_DigestFinal_ex(mdctx, output_hash, NULL)) {
+        g_print("Error finalizing SHA512\n");
+        EVP_MD_CTX_free(mdctx);
+        return;
+    }
+
+    EVP_MD_CTX_free(mdctx);
+}
+
+// Function to hash the password using PBKDF2
+void hash_password_pbkdf2(const char *password, unsigned char *output_hash, int iterations) {
+    unsigned char salt[16];
+    if(RAND_bytes(salt, sizeof(salt)) != 1) {
+        g_print("Error generating salt\n");
+        return;
+    }
+
+    if(PKCS5_PBKDF2_HMAC(password, strlen(password), salt, sizeof(salt), iterations, EVP_sha256(), 32, output_hash) != 1) {
+        g_print("Error generating PBKDF2 hash\n");
+        return;
+    }
+}
 
 // Callback to clear the entry
 static gboolean clear_entry(gpointer user_data) {
@@ -138,6 +213,7 @@ void on_generate_clicked(GtkWidget *widget, gpointer data) {
     GtkToggleButton *digit_check = GTK_TOGGLE_BUTTON(widgets[5]);
     GtkToggleButton *special_check = GTK_TOGGLE_BUTTON(widgets[6]);
     GtkToggleButton *ambiguous_check = GTK_TOGGLE_BUTTON(widgets[7]);
+    GtkComboBoxText *algorithm_combo = GTK_COMBO_BOX_TEXT(widgets[8]);
 
     // Get the length value from the slider
     int length = (int)gtk_range_get_value(GTK_RANGE(length_scale));
@@ -164,6 +240,22 @@ void on_generate_clicked(GtkWidget *widget, gpointer data) {
     snprintf(strength_text, sizeof(strength_text), "Strength: %s", strength);
     gtk_label_set_text(GTK_LABEL(strength_label), strength_text);
 
+    // Get the selected algorithm from the dropdown
+    const gchar *selected_algorithm = gtk_combo_box_text_get_active_text(algorithm_combo);
+    if (selected_algorithm) {
+        unsigned char output_hash[64]; // Maximum size needed for SHA512
+        if (strcmp(selected_algorithm, "SHA256") == 0) {
+            hash_password_sha256(password, output_hash);
+            g_print("SHA256 hash generated\n");
+        } else if (strcmp(selected_algorithm, "SHA512") == 0) {
+            hash_password_sha512(password, output_hash);
+            g_print("SHA512 hash generated\n");
+        } else if (strcmp(selected_algorithm, "PBKDF2") == 0) {
+            hash_password_pbkdf2(password, output_hash, 10000);
+            g_print("PBKDF2 hash generated\n");
+        }
+    }
+
     free(password);
 }
 
@@ -180,12 +272,13 @@ int main(int argc, char *argv[]) {
     GtkWidget *visibility_check;
     GtkWidget *box;
     GtkWidget *toggle_button;
+    GtkWidget *algorithm_combo;
 
     // Create a new window
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "GenPassX");
     gtk_container_set_border_width(GTK_CONTAINER(window), 10);
-    gtk_widget_set_size_request(window, 300, 300);
+    gtk_widget_set_size_request(window, 300, 400);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER); // Center the window
 
     // Create a vertical box
@@ -252,9 +345,18 @@ int main(int argc, char *argv[]) {
     strength_label = gtk_label_new("Strength: ");
     gtk_box_pack_start(GTK_BOX(box), strength_label, FALSE, FALSE, 5);
 
+    // Create a dropdown for password strengthening algorithms
+    algorithm_combo = gtk_combo_box_text_new();
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(algorithm_combo), NULL, "None");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(algorithm_combo), NULL, "PBKDF2");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(algorithm_combo), NULL, "SHA256");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(algorithm_combo), NULL, "SHA512");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(algorithm_combo), 0); // Set default to "None"
+    gtk_box_pack_start(GTK_BOX(box), algorithm_combo, FALSE, FALSE, 5);
+
     // Create a button widget for generating the password
     button = gtk_button_new_with_label("Generate Password");
-    GtkWidget *widgets[] = {entry, length_scale, strength_label, lower_check, upper_check, digit_check, special_check, ambiguous_check, toggle_button};
+    GtkWidget *widgets[] = {entry, length_scale, strength_label, lower_check, upper_check, digit_check, special_check, ambiguous_check, algorithm_combo};
     g_signal_connect(button, "clicked", G_CALLBACK(on_generate_clicked), widgets);
     gtk_box_pack_start(GTK_BOX(box), button, FALSE, FALSE, 5);
 
