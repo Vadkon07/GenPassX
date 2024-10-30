@@ -13,16 +13,16 @@ Improved version of our famous **password generation** app! In ***GenPassX*** we
 ## Installation
 
 ### Prerequisites
-Make sure GTK3 is installed on your system. If not, you can install it with the following command:
+Make sure GTK3 and OpenSSL are installed on your system. If not, you can install them with the following commands:
 ```bash
-sudo apt-get install libgtk-3-dev
+sudo apt-get install libgtk-3-dev libssl-dev
 ```
 
 ### Compilation
 After installing the required libraries, compile the app using:
 
 ```bash
-gcc -o genpassx main.c `pkg-config --cflags --libs gtk+-3.0`
+gcc -o genpassx main.c `pkg-config --cflags --libs gtk+-3.0` -lssl -lcrypto
 ```
 
 Running the Application
@@ -37,6 +37,8 @@ Once compiled, run the application with:
 - **Customizable Character Sets:** Choose which character types (lowercase, uppercase, digits, special characters) to include in the password.
 - **Password Visibility Toggle:** Easily show or hide the generated password.
 - **Save Password:** Save the generated password to a text file.
+- **Copy to Clipboard:** Quickly copy the generated password to the clipboard.
+- **Password Strengthening Algorithms:** Apply SHA256, SHA512, or PBKDF2 hashing to strengthen the password.
 
 <p align="center">
   <img src="Guide.png" alt="Guide Logo"/>
@@ -68,7 +70,7 @@ Allows generating multiple passwords at once.
 - [X] **Dark Mode / Theme Switching:** Adds a dark mode option for the interface.
 - [ ] **Password Policy Checker:** Allows defining custom password policies.
 - [ ] **Responsive UI for Different Devices:** Ensures the UI is responsive on different screen sizes.
-- [ ] **Password Strengthening Algorithms (e.g., Bcrypt, PBKDF2):** Adds strong hashing algorithms for password storage.
+- [X] **Password Strengthening Algorithms (e.g., Bcrypt, PBKDF2):** Adds strong hashing algorithms for password storage.
 
 ## License
 
