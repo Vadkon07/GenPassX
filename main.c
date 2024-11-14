@@ -6,7 +6,7 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 
-// version = 0.2
+// version = 0.3.0
 
 // Function to hash the password using SHA256
 void hash_password_sha256(const char *password, unsigned char *output_hash) {
@@ -131,8 +131,30 @@ void generate_password(char *password, int length, int use_lower, int use_upper,
     password[length] = '\0';
 }
 
-// Function to evaluate password strength
-const char* evaluate_password_strength(const char *password) {
+// Load css to change color of progressbar
+void load_css() {
+    GtkCssProvider *provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(provider,
+        "progressbar { background-color: #e0e0e0; }"
+        ".very-weak { background-color: red; }"
+        ".weak { background-color: orange; }"
+        ".medium { background-color: yellow; }"
+        ".strong { background-color: lightgreen; }"
+        ".very-strong { background-color: green; }",
+        -1, NULL);
+
+    GtkStyleContext *context = gtk_style_context_new();
+    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
+                                              GTK_STYLE_PROVIDER(provider),
+                                              GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref(provider);
+}
+
+const char* evaluate_password_strength(GtkWidget *progress_bar, const char *password) {
+    if (progress_bar == NULL || password == NULL) {
+        return "Error: Invalid progress bar or password";
+    }
+
     int has_upper = 0, has_lower = 0, has_digit = 0, has_special = 0;
     for (int i = 0; password[i] != '\0'; i++) {
         if (isupper(password[i])) has_upper = 1;
@@ -140,14 +162,31 @@ const char* evaluate_password_strength(const char *password) {
         else if (isdigit(password[i])) has_digit = 1;
         else has_special = 1;
     }
-    
+
     int score = has_upper + has_lower + has_digit + has_special;
-    
-    if (strlen(password) >= 48 && score >= 3) return ":/";
-    else if (strlen(password) >= 24 && score >= 3) return "Very strong";
-    else if (strlen(password) >= 12 && score >= 3) return "Strong";
-    else if (strlen(password) >= 8 && score >= 2) return "Medium";
-    else return "Weak. Try to generate another password!";
+    GtkStyleContext *context = gtk_widget_get_style_context(progress_bar);
+
+    if (strlen(password) >= 48 && score >= 3) {
+        gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.8);
+        gtk_style_context_add_class(context, "very-strong");
+        return "Very strong";
+    } else if (strlen(password) >= 24 && score >= 3) {
+        gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.6);
+        gtk_style_context_add_class(context, "strong");
+        return "Strong";
+    } else if (strlen(password) >= 12 && score >= 3) {
+        gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.4);
+        gtk_style_context_add_class(context, "medium");
+        return "Medium";
+    } else if (strlen(password) >= 8 && score >= 2) {
+        gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.2);
+        gtk_style_context_add_class(context, "weak");
+        return "Weak";
+    } else {
+        gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.1);
+        gtk_style_context_add_class(context, "very-weak");
+        return "Very Weak!";
+    }
 }
 
 // Callback for toggling password visibility
@@ -214,6 +253,7 @@ void on_generate_clicked(GtkWidget *widget, gpointer data) {
     GtkToggleButton *special_check = GTK_TOGGLE_BUTTON(widgets[6]);
     GtkToggleButton *ambiguous_check = GTK_TOGGLE_BUTTON(widgets[7]);
     GtkComboBoxText *algorithm_combo = GTK_COMBO_BOX_TEXT(widgets[8]);
+    GtkWidget *progress_bar = widgets[9];
 
     // Get the length value from the slider
     int length = (int)gtk_range_get_value(GTK_RANGE(length_scale));
@@ -235,7 +275,7 @@ void on_generate_clicked(GtkWidget *widget, gpointer data) {
     gtk_entry_set_text(GTK_ENTRY(entry), password);
 
     // Update the password strength label with prefix "Strength: "
-    const char *strength = evaluate_password_strength(password);
+    const char *strength = evaluate_password_strength(progress_bar, password);
     char strength_text[50];
     snprintf(strength_text, sizeof(strength_text), "Strength: %s", strength);
     gtk_label_set_text(GTK_LABEL(strength_label), strength_text);
@@ -261,6 +301,9 @@ void on_generate_clicked(GtkWidget *widget, gpointer data) {
 
 int main(int argc, char *argv[]) {
     gtk_init(&argc, &argv);
+
+    load_css(); // For progressbar colors
+		//
     srand(time(NULL)); // Seed the random number generator
 
     GtkWidget *window;
@@ -273,6 +316,7 @@ int main(int argc, char *argv[]) {
     GtkWidget *box;
     GtkWidget *toggle_button;
     GtkWidget *algorithm_combo;
+    GtkWidget *progress_bar;
 
     // Create a new window
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -345,6 +389,12 @@ int main(int argc, char *argv[]) {
     strength_label = gtk_label_new("Strength: ");
     gtk_box_pack_start(GTK_BOX(box), strength_label, FALSE, FALSE, 5);
 
+    // Progress bar for strength
+    progress_bar = gtk_progress_bar_new();
+    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.0);
+    gtk_box_pack_start(GTK_BOX(box), progress_bar, FALSE, FALSE, 5);
+    //gtk_container_add(GTK_CONTAINER(window), progress_bar); RM RM RM
+
     // Create a dropdown for password strengthening algorithms
     algorithm_combo = gtk_combo_box_text_new();
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(algorithm_combo), NULL, "None");
@@ -356,7 +406,7 @@ int main(int argc, char *argv[]) {
 
     // Create a button widget for generating the password
     button = gtk_button_new_with_label("Generate Password");
-    GtkWidget *widgets[] = {entry, length_scale, strength_label, lower_check, upper_check, digit_check, special_check, ambiguous_check, algorithm_combo};
+    GtkWidget *widgets[] = {entry, length_scale, strength_label, lower_check, upper_check, digit_check, special_check, ambiguous_check, algorithm_combo, progress_bar};
     g_signal_connect(button, "clicked", G_CALLBACK(on_generate_clicked), widgets);
     gtk_box_pack_start(GTK_BOX(box), button, FALSE, FALSE, 5);
 

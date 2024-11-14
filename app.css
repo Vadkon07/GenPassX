@@ -1,0 +1,20 @@
+/* app.css, don't rename this file! */
+.very-weak {
+    background-color: red;
+}
+
+.weak {
+    background-color: orange;
+}
+
+.medium {
+    background-color: yellow;
+}
+
+.strong {
+    background-color: lightgreen;
+}
+
+.very-strong {
+    background-color: green;
+}
